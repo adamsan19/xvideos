@@ -526,3 +526,17 @@ node dist/esm/server.js
 
 ### License
 [Licence](https://github.com/rodrigogs/xvideos/blob/master/LICENSE) © Rodrigo Gomes da Silva
+
+
+Perubahan yang dibuat
+
+Tambah dependensi: express dan @types/express di package.json.
+Tambah server: server.ts (dibangun ke server.js).
+Endpoint baru:
+GET /videos/dashboard?page=1
+GET /videos/fresh?page=1
+GET /videos/best?year=YYYY&month=MM&page=1
+GET /videos/verified?page=1
+GET /videos/search?k=term&page=1&sort=relevance&datef=all&durf=allduration&quality=all
+GET /videos/details?url=<video_url>
+POST /videos/detailsMany (JSON body: { "urls": ["https://...","..."] })
