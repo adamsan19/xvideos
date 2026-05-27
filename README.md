@@ -285,7 +285,188 @@ console.log(videos); // Array of video objects with properties based on the sear
 | `durf`    | `"allduration"`| `"1-3min"`, `"3-10min"`, `"10min_more"`, `"10-20min"`, `"20min_more"`, `"allduration"` |
 | `quality` | `"all"`        | `"hd"`, `"1080P"`, `"all"`                                                                |
 
+## Local Demo Server (Express)
 
+A local Express server is included to demonstrate the library with a web interface. You can browse and interact with all API endpoints via HTTP.
+
+### Setup & Run
+
+```bash
+# Install dependencies
+npm install
+
+# Build TypeScript
+npm run build
+
+# Start the server (runs on http://localhost:3000)
+node dist/esm/server.js
+```
+
+The server will start and print: `Server running at http://localhost:3000`
+
+### Available Endpoints
+
+All endpoints render HTML responses by default. The server scrapes live data from xvideos.com, so results depend on network availability and may be subject to rate-limiting.
+
+#### GET /videos/dashboard
+Retrieve dashboard videos (homepage).
+
+```bash
+curl http://localhost:3000/videos/dashboard?page=1
+```
+
+**Query parameters:**
+- `page` (optional, default: `1`) - Page number
+
+---
+
+#### GET /videos/fresh
+Retrieve the latest/fresh videos.
+
+```bash
+curl http://localhost:3000/videos/fresh?page=1
+```
+
+**Query parameters:**
+- `page` (optional, default: `1`) - Page number
+
+---
+
+#### GET /videos/best
+Retrieve best-rated videos for a specific month.
+
+```bash
+curl http://localhost:3000/videos/best?year=2024&month=05&page=1
+```
+
+**Query parameters:**
+- `year` (optional) - Year (e.g., `2024`)
+- `month` (optional) - Month (e.g., `01` to `12`)
+- `page` (optional, default: `1`) - Page number
+
+---
+
+#### GET /videos/verified
+Retrieve videos from verified creators.
+
+```bash
+curl http://localhost:3000/videos/verified?page=1
+```
+
+**Query parameters:**
+- `page` (optional, default: `1`) - Page number
+
+---
+
+#### GET /videos/search
+Search for videos by keyword with optional filters.
+
+```bash
+curl "http://localhost:3000/videos/search?k=test&sort=relevance&datef=all&durf=allduration&quality=all&page=1"
+```
+
+**Query parameters:**
+- `k` (optional, default: `""`) - Search keyword
+- `page` (optional, default: `1`) - Page number
+- `sort` (optional, default: `"relevance"`) - Sort by: `"relevance"`, `"uploaddate"`, `"rating"`, `"length"`, `"views"`, `"random"`
+- `datef` (optional, default: `"all"`) - Date filter: `"today"`, `"week"`, `"month"`, `"3month"`, `"6month"`, `"all"`
+- `durf` (optional, default: `"allduration"`) - Duration filter: `"1-3min"`, `"3-10min"`, `"10min_more"`, `"10-20min"`, `"20min_more"`, `"allduration"`
+- `quality` (optional, default: `"all"`) - Quality filter: `"hd"`, `"1080P"`, `"all"`
+
+---
+
+#### GET /videos/details
+Retrieve detailed information about a specific video.
+
+```bash
+curl "http://localhost:3000/videos/details?url=https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018"
+```
+
+**Query parameters:**
+- `url` (required) - Full URL of the video (e.g., from a search result)
+
+**Response:** HTML page with detailed video metadata (title, duration, thumbnails, watch count, tags, categories, etc.)
+
+---
+
+#### POST /videos/detailsMany
+Retrieve detailed information for multiple videos in batch.
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": [
+      "https://www.xvideos.com/video123/...",
+      "https://www.xvideos.com/video456/..."
+    ]
+  }' \
+  http://localhost:3000/videos/detailsMany
+```
+
+**Request body (JSON):**
+```json
+{
+  "urls": [
+    "https://www.xvideos.com/videoId1/...",
+    "https://www.xvideos.com/videoId2/..."
+  ]
+}
+```
+
+**Response:** HTML page displaying:
+- `Successes` - Array of successfully fetched video details in input order
+- `Failures` - Array of failed requests with error details
+
+---
+
+### Example Workflows
+
+**1. Browse fresh videos:**
+```bash
+# Page 1 of fresh videos
+http://localhost:3000/videos/fresh?page=1
+
+# Page 2 of fresh videos
+http://localhost:3000/videos/fresh?page=2
+```
+
+**2. Search with filters:**
+```bash
+# Search for "threesome" rated highly this week in HD
+http://localhost:3000/videos/search?k=threesome&sort=rating&datef=week&quality=hd&page=1
+```
+
+**3. Get video details:**
+```bash
+# After finding a video URL from search results, get full details
+http://localhost:3000/videos/details?url=https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018
+```
+
+**4. Batch fetch details (via curl):**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"urls":["https://www.xvideos.com/video123/...","https://www.xvideos.com/video456/..."]}' \
+  http://localhost:3000/videos/detailsMany
+```
+
+### Rate Limiting & Troubleshooting
+
+- **HTTP 429 (Too Many Requests):** The target site is rate-limiting requests. Wait a moment and retry.
+- **Network Errors:** Ensure you have internet connectivity; scraping requires access to xvideos.com.
+- **Port Already in Use:** If port 3000 is occupied, set `PORT` environment variable:
+  ```bash
+  PORT=8080 node dist/esm/server.js
+  ```
+
+### Development
+
+The server code is in [src/server.ts](src/server.ts). To modify endpoints or styling, edit the file and rebuild:
+
+```bash
+npm run build
+node dist/esm/server.js
+```
 
 ---
 
