@@ -77,42 +77,96 @@ npm test
 
 ## Migration Notes
 
-### Version 3.1 richer list results and crawl ergonomics
+### Version 3.1 → Current: Richer list results and batch crawl ergonomics
 
-This release is additive:
+**Status:** ✅ Additive release (backward compatible)
 
-- list items now include `durationSeconds` and `thumbnailUrl`
-- `videos.detailsMany()` adds ordered batch detail fetching with `concurrency`, `retries`, `retryDelayMs`, and `minDelayMs`
+**What changed:**
+- List endpoints (`fresh`, `dashboard`, `best`, `verified`, `search`) now include additional fields per item
+- New `videos.detailsMany()` method for batch detail fetching with concurrency control
 
-### Version 3.0 field normalization
+**New fields in list items:**
+- `durationSeconds` (number) - Video duration in seconds
+- `thumbnailUrl` (string) - Primary thumbnail URL
 
-Some fields were normalized to remove redundant data while keeping all information available:
+**New batch details method:**
+```javascript
+const batch = await xvideos.videos.detailsMany(
+  [{ url: '...' }, { url: '...' }],
+  {
+    concurrency: 3,        // Parallel requests
+    retries: 1,            // Retry failed requests
+    retryDelayMs: 250,     // Delay between retries
+    minDelayMs: 500,       // Minimum delay between requests
+  }
+);
 
-| Previous field | New field | Notes |
+console.log(batch.successes); // Array of successful detail objects
+console.log(batch.failures);  // Array of failures with error details
+```
+
+**Migration:** No action required. Your existing code continues to work; new fields are optional bonuses.
+
+---
+
+### Version 3.0 → 3.1: Field normalization and data cleanup
+
+**Status:** ⚠️ Breaking changes (requires code updates)
+
+**What changed:**
+Several fields were renamed and restructured for consistency, performance, and clarity. All information remains available—just in different field names.
+
+**Field renaming:**
+
+| Previous field | New field | Migration Notes |
 |---|---|---|
-| `videos[].path` | `videos[].videoId` | Use `video.url` if you need full link, or rebuild path with `/${video.videoId}` when required. |
-| `videos[].views` | `videos[].watchCount` | Numeric form for sorting/filtering. |
-| `details.image` | `details.thumbnailUrls[0]` | Primary thumbnail remains available as first item. |
-| `details.views` | `details.watchCount` | Numeric form for analytics and ranking. |
+| `videos[].path` | `videos[].videoId` | Use `video.url` for full link, or `/${video.videoId}` to rebuild. |
+| `videos[].views` | `videos[].watchCount` | Numeric value; use for sorting/filtering. |
+| `details.image` | `details.thumbnailUrls[0]` | Primary thumbnail is now first item in array. |
+| `details.views` | `details.watchCount` | Numeric value for analytics/ranking. |
 
-### New fields added
+**How to upgrade:**
 
-- `videos[].durationSeconds`
-- `videos[].thumbnailUrl`
+Before (v2.x):
+```javascript
+const video = await xvideos.videos.fresh({ page: 1 });
+console.log(video.videos[0].path);      // ❌ No longer available
+console.log(video.videos[0].views);     // ❌ No longer available
+```
 
-- `details.videoId`
-- `details.durationSeconds`
-- `details.thumbnailUrls`
-- `details.watchCount`
-- `details.voteCount`
-- `details.ratingPercent`
-- `details.uploadDate`
-- `details.description`
-- `details.contentUrl`
-- `details.tags`
-- `details.categories`
+After (v3.0+):
+```javascript
+const video = await xvideos.videos.fresh({ page: 1 });
+console.log(video.videos[0].videoId);      // ✅ Use this
+console.log(video.videos[0].watchCount);   // ✅ Use this
+console.log(video.videos[0].url);          // ✅ Full URL available
+```
 
-These changes keep feature parity and add richer metadata from structured page data.
+**New fields added in v3.0+:**
+
+List item fields:
+- `durationSeconds` (number) - Duration in seconds for easy sorting
+- `thumbnailUrl` (string) - Primary thumbnail URL
+
+Details object fields:
+- `videoId` (string) - Unique video identifier
+- `durationSeconds` (number) - Duration in seconds
+- `thumbnailUrls` (string[]) - Array of thumbnail URLs
+- `watchCount` (number) - Total views/watches
+- `voteCount` (number) - Number of votes/ratings
+- `ratingPercent` (number) - Rating percentage (0-100)
+- `uploadDate` (string) - Upload date/timestamp
+- `description` (string) - Video description text
+- `contentUrl` (string) - Direct content URL (if available)
+- `tags` (string[]) - Array of tags
+- `categories` (string[]) - Array of categories
+
+**Benefits of v3.0+ normalization:**
+- ✅ Consistent field naming across all endpoints
+- ✅ More robust data extraction from structured HTML
+- ✅ Numeric `watchCount` enables easy sorting/filtering
+- ✅ `durationSeconds` for precise time-based queries
+- ✅ Rich metadata (`tags`, `categories`, `description`) for better content discovery
 
 ## API
 
